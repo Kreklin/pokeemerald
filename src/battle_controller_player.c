@@ -1479,6 +1479,8 @@ static void MoveSelectionDisplayPpString(void)
 static void MoveSelectionDisplayPpNumber(void)
 {
     u8 *txtPtr;
+    u8 currentPp;
+    u8 maxPp;
     struct ChooseMoveStruct *moveInfo;
 
     if (gBattleBufferA[gActiveBattler][2] == TRUE) // check if we didn't want to display pp number
@@ -1486,9 +1488,12 @@ static void MoveSelectionDisplayPpNumber(void)
 
     SetPpNumbersPaletteInMoveSelection();
     moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
-    txtPtr = ConvertIntToDecimalStringN(gDisplayedStringBattle, moveInfo->currentPp[gMoveSelectionCursor[gActiveBattler]], STR_CONV_MODE_RIGHT_ALIGN, 2);
+    currentPp = gSaveBlock1Ptr->ppTracker[moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]];
+    maxPp = gBattleMoves[moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]].pp;
+
+    txtPtr = ConvertIntToDecimalStringN(gDisplayedStringBattle, currentPp, STR_CONV_MODE_RIGHT_ALIGN, 2);
     *(txtPtr)++ = CHAR_SLASH;
-    ConvertIntToDecimalStringN(txtPtr, moveInfo->maxPp[gMoveSelectionCursor[gActiveBattler]], STR_CONV_MODE_RIGHT_ALIGN, 2);
+    ConvertIntToDecimalStringN(txtPtr, maxPp, STR_CONV_MODE_RIGHT_ALIGN, 2);
 
     BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_PP_REMAINING);
 }
