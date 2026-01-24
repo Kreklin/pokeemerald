@@ -1691,14 +1691,14 @@ const struct Item gItems[] =
         .name = _("LEPPA BERRY"),
         .itemId = ITEM_LEPPA_BERRY,
         .price = 20,
-        .holdEffect = HOLD_EFFECT_RESTORE_PP,
+        .holdEffect = HOLD_EFFECT_RESTORE_HP,
         .holdEffectParam = 10,
-        .description = sLeppaBerryDesc,
+        .description = sOranBerryDesc,
         .pocket = POCKET_BERRIES,
         .type = ITEM_USE_PARTY_MENU,
-        .fieldUseFunc = ItemUseOutOfBattle_PPRecovery,
+        .fieldUseFunc = ItemUseOutOfBattle_Medicine,
         .battleUsage = ITEM_B_USE_MEDICINE,
-        .battleUseFunc = ItemUseInBattle_PPRecovery,
+        .battleUseFunc = ItemUseInBattle_Medicine,
     },
 
     [ITEM_ORAN_BERRY] =
