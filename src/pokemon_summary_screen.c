@@ -40,6 +40,7 @@
 #include "text.h"
 #include "tv.h"
 #include "window.h"
+#include "pp_tracker.h"
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "constants/party_menu.h"
@@ -3550,8 +3551,8 @@ static void PrintMoveNameAndPP(u8 moveIndex)
         // x = GetStringRightAlignXOffset(FONT_NORMAL, text, 44);
 
         // Display global PP value
-        pp = gSaveBlock1Ptr->ppTracker[move];
-        ppMax = gBattleMoves[move].pp;
+        pp = GetGlobalPP(move);
+        ppMax = GetGlobalMaxPP(move);
         PrintTextOnWindow(moveNameWindowId, gMoveNames[move], 0, moveIndex * 16 + 1, 0, 1);
         ConvertIntToDecimalStringN(gStringVar1, pp, STR_CONV_MODE_RIGHT_ALIGN, 2);
         ConvertIntToDecimalStringN(gStringVar2, ppMax, STR_CONV_MODE_RIGHT_ALIGN, 2);
@@ -3716,10 +3717,11 @@ static void PrintNewMoveDetailsOrCancelText(void)
         else
             PrintTextOnWindow(windowId1, gMoveNames[move], 0, 65, 0, 5);
 
-        ConvertIntToDecimalStringN(gStringVar1, gBattleMoves[move].pp, STR_CONV_MODE_RIGHT_ALIGN, 2);
+        ConvertIntToDecimalStringN(gStringVar1, GetGlobalPP(move), STR_CONV_MODE_RIGHT_ALIGN, 2);
+        ConvertIntToDecimalStringN(gStringVar2, GetGlobalMaxPP(move), STR_CONV_MODE_RIGHT_ALIGN, 2);
         DynamicPlaceholderTextUtil_Reset();
         DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
-        DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, gStringVar1);
+        DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, gStringVar2);
         DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, sMovesPPLayout);
         PrintTextOnWindow(windowId2, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 44), 65, 0, 12);
     }

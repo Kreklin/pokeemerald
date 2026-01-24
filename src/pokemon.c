@@ -4944,19 +4944,23 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, u16 item, u8 partyIndex, u8 mov
             // PP Up
             if (effectFlags & ITEM4_PP_UP)
             {
-                effectFlags &= ~ITEM4_PP_UP;
-                dataUnsigned = (GetMonData(mon, MON_DATA_PP_BONUSES, NULL) & gPPUpGetMask[moveIndex]) >> (moveIndex * 2);
-                temp1 = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex);
-                if (dataUnsigned <= 2 && temp1 > 4)
-                {
-                    dataUnsigned = GetMonData(mon, MON_DATA_PP_BONUSES, NULL) + gPPUpAddValues[moveIndex];
-                    SetMonData(mon, MON_DATA_PP_BONUSES, &dataUnsigned);
-
-                    dataUnsigned = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), dataUnsigned, moveIndex) - temp1;
-                    dataUnsigned = GetMonData(mon, MON_DATA_PP1 + moveIndex, NULL) + dataUnsigned;
-                    SetMonData(mon, MON_DATA_PP1 + moveIndex, &dataUnsigned);
+                u16 move = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL);
+                if (IncreaseGlobalMaxPP(move, 1))
                     retVal = FALSE;
-                }
+
+                // effectFlags &= ~ITEM4_PP_UP;
+                // dataUnsigned = (GetMonData(mon, MON_DATA_PP_BONUSES, NULL) & gPPUpGetMask[moveIndex]) >> (moveIndex * 2);
+                // temp1 = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex);
+                // if (dataUnsigned <= 2 && temp1 > 4)
+                // {
+                //     dataUnsigned = GetMonData(mon, MON_DATA_PP_BONUSES, NULL) + gPPUpAddValues[moveIndex];
+                //     SetMonData(mon, MON_DATA_PP_BONUSES, &dataUnsigned);
+
+                //     dataUnsigned = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), dataUnsigned, moveIndex) - temp1;
+                //     dataUnsigned = GetMonData(mon, MON_DATA_PP1 + moveIndex, NULL) + dataUnsigned;
+                //     SetMonData(mon, MON_DATA_PP1 + moveIndex, &dataUnsigned);
+                //     retVal = FALSE;
+                // }
             }
             temp1 = 0;
 
@@ -5110,7 +5114,7 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, u16 item, u8 partyIndex, u8 mov
                             for (temp2 = 0; (signed)(temp2) < (signed)(MAX_MON_MOVES); temp2++)
                             {
                                 u16 move;
-                                dataUnsigned = GetMonData(mon, MON_DATA_PP1 + temp2, NULL);
+                                // dataUnsigned = GetMonData(mon, MON_DATA_PP1 + temp2, NULL);
                                 move = GetMonData(mon, MON_DATA_MOVE1 + temp2, NULL);
                                 if (HealGlobalPP(move, itemEffect[itemEffectParam]))
                                     retVal = FALSE;
@@ -5140,9 +5144,8 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, u16 item, u8 partyIndex, u8 mov
                         else
                         {
                             // Heal PP for one move
-                            u16 move;
-                            dataUnsigned = GetMonData(mon, MON_DATA_PP1 + moveIndex, NULL);
-                            move = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL);
+                            // dataUnsigned = GetMonData(mon, MON_DATA_PP1 + moveIndex, NULL);
+                            u16 move = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL);
                             if (HealGlobalPP(move, itemEffect[itemEffectParam++]))
                                 retVal = FALSE;
                             
@@ -5248,22 +5251,26 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, u16 item, u8 partyIndex, u8 mov
                         break;
 
                     case 4: // ITEM5_PP_MAX
-                        dataUnsigned = (GetMonData(mon, MON_DATA_PP_BONUSES, NULL) & gPPUpGetMask[moveIndex]) >> (moveIndex * 2);
-                        temp2 = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex);
-
-                        // Check if 3 PP Ups have been applied already, and that the move has a total PP of at least 5 (excludes Sketch)
-                        if (dataUnsigned < 3 && temp2 >= 5)
-                        {
-                            dataUnsigned = GetMonData(mon, MON_DATA_PP_BONUSES, NULL);
-                            dataUnsigned &= gPPUpClearMask[moveIndex];
-                            dataUnsigned += gPPUpAddValues[moveIndex] * 3; // Apply 3 PP Ups (max)
-
-                            SetMonData(mon, MON_DATA_PP_BONUSES, &dataUnsigned);
-                            dataUnsigned = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), dataUnsigned, moveIndex) - temp2;
-                            dataUnsigned = GetMonData(mon, MON_DATA_PP1 + moveIndex, NULL) + dataUnsigned;
-                            SetMonData(mon, MON_DATA_PP1 + moveIndex, &dataUnsigned);
+                        dataUnsigned = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL);
+                        if (IncreaseGlobalMaxPP(dataUnsigned, 3))
                             retVal = FALSE;
-                        }
+
+                        // dataUnsigned = (GetMonData(mon, MON_DATA_PP_BONUSES, NULL) & gPPUpGetMask[moveIndex]) >> (moveIndex * 2);
+                        // temp2 = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex);
+
+                        // // Check if 3 PP Ups have been applied already, and that the move has a total PP of at least 5 (excludes Sketch)
+                        // if (dataUnsigned < 3 && temp2 >= 5)
+                        // {
+                        //     dataUnsigned = GetMonData(mon, MON_DATA_PP_BONUSES, NULL);
+                        //     dataUnsigned &= gPPUpClearMask[moveIndex];
+                        //     dataUnsigned += gPPUpAddValues[moveIndex] * 3; // Apply 3 PP Ups (max)
+
+                        //     SetMonData(mon, MON_DATA_PP_BONUSES, &dataUnsigned);
+                        //     dataUnsigned = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), dataUnsigned, moveIndex) - temp2;
+                        //     dataUnsigned = GetMonData(mon, MON_DATA_PP1 + moveIndex, NULL) + dataUnsigned;
+                        //     SetMonData(mon, MON_DATA_PP1 + moveIndex, &dataUnsigned);
+                        //     retVal = FALSE;
+                        // }
                         break;
 
                     case 5: // ITEM5_FRIENDSHIP_LOW

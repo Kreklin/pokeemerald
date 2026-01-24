@@ -32,6 +32,7 @@
 #include "data.h"
 #include "pp_tracker.h"
 #include "pokemon_summary_screen.h"
+#include "dynamic_placeholder_text_util.h"
 
 // Top level PC menu options
 enum {
@@ -1234,8 +1235,12 @@ static void PPTracker_PrintMenuItem(u8 windowId, u32 id, u8 yOffset)
 {
     if (id != LIST_CANCEL)
     {
-        ConvertIntToDecimalStringN(gStringVar1, gSaveBlock1Ptr->ppTracker[id], STR_CONV_MODE_RIGHT_ALIGN, 3);
-        StringExpandPlaceholders(gStringVar4, gText_xVar1);
+        ConvertIntToDecimalStringN(gStringVar1, GetGlobalPP(id), STR_CONV_MODE_RIGHT_ALIGN, 2);
+        ConvertIntToDecimalStringN(gStringVar2, GetGlobalMaxPP(id), STR_CONV_MODE_RIGHT_ALIGN, 2);
+        DynamicPlaceholderTextUtil_Reset();
+        DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
+        DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, gStringVar2);
+        DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_PPTrackerCount);
         AddTextPrinterParameterized(windowId, FONT_NARROW, gStringVar4, GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 104), yOffset, TEXT_SKIP_DRAW, NULL);
     }
 }

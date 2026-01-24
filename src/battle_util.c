@@ -24,6 +24,7 @@
 #include "event_data.h"
 #include "link.h"
 #include "field_weather.h"
+#include "pp_tracker.h"
 #include "constants/abilities.h"
 #include "constants/battle_anim.h"
 #include "constants/battle_move_effects.h"
@@ -1101,7 +1102,7 @@ u8 CheckMoveLimitations(u8 battler, u8 unusableMoves, u8 check)
         if (gBattleMons[battler].pp[i] == 0 && check & MOVE_LIMITATION_PP)
             unusableMoves |= gBitTable[i];
         // No global PP
-        if (GetBattlerSide(battler) == B_SIDE_PLAYER && gSaveBlock1Ptr->ppTracker[gBattleMons[battler].moves[i]] == 0 && check & MOVE_LIMITATION_PP)
+        if (GetBattlerSide(battler) == B_SIDE_PLAYER && GetGlobalPP(gBattleMons[battler].moves[i]) == 0 && check & MOVE_LIMITATION_PP)
             unusableMoves |= gBitTable[i];
         // Disable
         if (gBattleMons[battler].moves[i] == gDisableStructs[battler].disabledMove && check & MOVE_LIMITATION_DISABLED)

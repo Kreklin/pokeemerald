@@ -28,6 +28,7 @@
 #include "text.h"
 #include "util.h"
 #include "window.h"
+#include "pp_tracker.h"
 #include "constants/battle_anim.h"
 #include "constants/items.h"
 #include "constants/moves.h"
@@ -1488,8 +1489,8 @@ static void MoveSelectionDisplayPpNumber(void)
 
     SetPpNumbersPaletteInMoveSelection();
     moveInfo = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
-    currentPp = gSaveBlock1Ptr->ppTracker[moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]];
-    maxPp = gBattleMoves[moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]].pp;
+    currentPp = GetGlobalPP(moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]);
+    maxPp = GetGlobalMaxPP(moveInfo->moves[gMoveSelectionCursor[gActiveBattler]]);
 
     txtPtr = ConvertIntToDecimalStringN(gDisplayedStringBattle, currentPp, STR_CONV_MODE_RIGHT_ALIGN, 2);
     *(txtPtr)++ = CHAR_SLASH;

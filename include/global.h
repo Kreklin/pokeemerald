@@ -147,6 +147,7 @@
 #define NUM_DEX_FLAG_BYTES ROUND_BITS_TO_BYTES(NUM_SPECIES)
 #define NUM_FLAG_BYTES ROUND_BITS_TO_BYTES(FLAGS_COUNT)
 #define NUM_TRENDY_SAYING_BYTES ROUND_BITS_TO_BYTES(NUM_TRENDY_SAYINGS)
+#define NUM_PP_INCREASE_BYTES ROUND_BITS_TO_BYTES(PP_TRACKER_COUNT * 2)
 
 // This returns the number of arguments passed to it (up to 8).
 #define NARG_8(...) NARG_8_(_, ##__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0)
@@ -1022,6 +1023,9 @@ struct SaveBlock1
     /*0x159C*/ u32 gameStats[NUM_GAME_STATS];
     /*0x169C*/ struct BerryTree berryTrees[BERRY_TREES_COUNT];
     /*0x1A9C*/ struct SecretBase secretBases[SECRET_BASES_COUNT];
+    /*0x23FC*/ u8 ppTracker[PP_TRACKER_COUNT];
+    /*0x255E*/ u8 ppIncreaseTracker[NUM_PP_INCREASE_BYTES];
+    /*0x25B6*/ u8 unused_25B6[358];
     /*0x271C*/ u8 playerRoomDecorations[DECOR_MAX_PLAYERS_HOUSE];
     /*0x2728*/ u8 playerRoomDecorationPositions[DECOR_MAX_PLAYERS_HOUSE];
     /*0x2734*/ u8 decorationDesks[10];
@@ -1064,7 +1068,7 @@ struct SaveBlock1
     /*0x31DC*/ struct Roamer roamer;
     /*0x31F8*/ struct EnigmaBerry enigmaBerry;
     /*0x322C*/ struct MysteryGiftSave mysteryGift;
-    /*0x3598*/ u8 ppTracker[0x180];
+    /*0x3598*/ u8 unused_3598[0x180];
     /*0x3718*/ u32 trainerHillTimes[NUM_TRAINER_HILL_MODES];
     /*0x3728*/ struct RamScript ramScript;
     /*0x3B14*/ struct RecordMixingGift recordMixingGift;

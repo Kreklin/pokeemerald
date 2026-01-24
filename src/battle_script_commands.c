@@ -932,7 +932,7 @@ static void Cmd_attackcanceler(void)
         return;
     if (AbilityBattleEffects(ABILITYEFFECT_MOVES_BLOCK, gBattlerTarget, 0, 0, 0))
         return;
-    if (((GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER && !gSaveBlock1Ptr->ppTracker[gCurrentMove]) || !gBattleMons[gBattlerAttacker].pp[gCurrMovePos])
+    if (((GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER && !GetGlobalPP(gCurrentMove)) || !gBattleMons[gBattlerAttacker].pp[gCurrMovePos])
      && gCurrentMove != MOVE_STRUGGLE && !(gHitMarker & (HITMARKER_ALLOW_NO_PP | HITMARKER_NO_ATTACKSTRING))
      && !(gBattleMons[gBattlerAttacker].status2 & STATUS2_MULTIPLETURNS))
     {

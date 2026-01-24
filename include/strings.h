@@ -570,6 +570,7 @@ extern const u8 gText_ItemStorage[];
 extern const u8 gText_Mailbox[];
 extern const u8 gText_Decoration[];
 extern const u8 gText_PPTracker[];
+extern const u8 gText_PPTrackerCount[];
 extern const u8 gText_TurnOff[];
 
 extern const u8 gText_WithdrawItem[];
