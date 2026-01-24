@@ -931,7 +931,8 @@ static void Cmd_attackcanceler(void)
         return;
     if (AbilityBattleEffects(ABILITYEFFECT_MOVES_BLOCK, gBattlerTarget, 0, 0, 0))
         return;
-    if (!gBattleMons[gBattlerAttacker].pp[gCurrMovePos] && gCurrentMove != MOVE_STRUGGLE && !(gHitMarker & (HITMARKER_ALLOW_NO_PP | HITMARKER_NO_ATTACKSTRING))
+    if (((GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER && !gSaveBlock1Ptr->ppTracker[gCurrentMove]) || !gBattleMons[gBattlerAttacker].pp[gCurrMovePos])
+     && gCurrentMove != MOVE_STRUGGLE && !(gHitMarker & (HITMARKER_ALLOW_NO_PP | HITMARKER_NO_ATTACKSTRING))
      && !(gBattleMons[gBattlerAttacker].status2 & STATUS2_MULTIPLETURNS))
     {
         gBattlescriptCurrInstr = BattleScript_NoPPForMove;
@@ -1231,10 +1232,22 @@ static void Cmd_ppreduce(void)
     {
         gProtectStructs[gBattlerAttacker].notFirstStrike = 1;
 
-        if (gBattleMons[gBattlerAttacker].pp[gCurrMovePos] > ppToDeduct)
-            gBattleMons[gBattlerAttacker].pp[gCurrMovePos] -= ppToDeduct;
+        if (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)
+        {
+            // deduct PP from global value
+            if (gSaveBlock1Ptr->ppTracker[gCurrentMove] > ppToDeduct)
+                gSaveBlock1Ptr->ppTracker[gCurrentMove] -= ppToDeduct;
+            else
+                gSaveBlock1Ptr->ppTracker[gCurrentMove] = 0;
+        }
         else
-            gBattleMons[gBattlerAttacker].pp[gCurrMovePos] = 0;
+        {
+            // Mantain default PP behavior for opponent
+            if (gBattleMons[gBattlerAttacker].pp[gCurrMovePos] > ppToDeduct)
+                gBattleMons[gBattlerAttacker].pp[gCurrMovePos] -= ppToDeduct;
+            else
+                gBattleMons[gBattlerAttacker].pp[gCurrMovePos] = 0;
+        }
 
         if (MOVE_IS_PERMANENT(gBattlerAttacker, gCurrMovePos))
         {

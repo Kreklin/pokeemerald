@@ -1100,6 +1100,9 @@ u8 CheckMoveLimitations(u8 battler, u8 unusableMoves, u8 check)
         // No PP
         if (gBattleMons[battler].pp[i] == 0 && check & MOVE_LIMITATION_PP)
             unusableMoves |= gBitTable[i];
+        // No global PP
+        if (GetBattlerSide(battler) == B_SIDE_PLAYER && gSaveBlock1Ptr->ppTracker[gBattleMons[battler].moves[i]] == 0 && check & MOVE_LIMITATION_PP)
+            unusableMoves |= gBitTable[i];
         // Disable
         if (gBattleMons[battler].moves[i] == gDisableStructs[battler].disabledMove && check & MOVE_LIMITATION_DISABLED)
             unusableMoves |= gBitTable[i];
