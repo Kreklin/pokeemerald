@@ -1456,6 +1456,7 @@ FuryCutterStrongest:
 	goto FuryCutterContinue2
 
 Move_SELF_DESTRUCT:
+Move_STRUGGLE:
 	loadspritegfx ANIM_TAG_EXPLOSION
 	createvisualtask AnimTask_BlendBattleAnimPal, 10, F_PAL_ATTACKER, 1, 0, 9, RGB_RED
 	createvisualtask AnimTask_ShakeMon2, 5, ANIM_PLAYER_LEFT, 6, 0, 38, 1
@@ -3040,24 +3041,6 @@ Move_SLASH:
 	createvisualtask AnimTask_ShakeMon2, 2, ANIM_TARGET, 4, 0, 18, 1
 	playsewithpan SE_M_RAZOR_WIND, SOUND_PAN_TARGET
 	waitforvisualfinish
-	end
-
-Move_STRUGGLE:
-	loadspritegfx ANIM_TAG_IMPACT
-	loadspritegfx ANIM_TAG_MOVEMENT_WAVES
-	monbg ANIM_TARGET
-	setalpha 12, 8
-	createvisualtask AnimTask_ShakeMonInPlace, 2, ANIM_ATTACKER, 3, 0, 12, 4
-	createsprite gMovementWavesSpriteTemplate, ANIM_ATTACKER, 2, 0, 0, 2
-	createsprite gMovementWavesSpriteTemplate, ANIM_ATTACKER, 2, 0, 1, 2
-	loopsewithpan SE_M_HEADBUTT, SOUND_PAN_ATTACKER, 12, 4
-	waitforvisualfinish
-	create_basic_hitsplat_sprite ANIM_ATTACKER, 3, x=0, y=0, relative_to=ANIM_TARGET, animation=2
-	createvisualtask AnimTask_ShakeMonInPlace, 2, ANIM_TARGET, 3, 0, 6, 1
-	playsewithpan SE_M_MEGA_KICK2, SOUND_PAN_TARGET
-	waitforvisualfinish
-	clearmonbg ANIM_TARGET
-	blendoff
 	end
 
 Move_SKETCH:
