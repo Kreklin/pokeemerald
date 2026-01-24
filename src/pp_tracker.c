@@ -30,3 +30,28 @@ void NewGameInitPPTracker(void)
         gSaveBlock1Ptr->ppTracker[moveId] = gBattleMoves[moveId].pp;
     }
 }
+
+/// @return Returns false if move is at max PP already, otherwise true.
+bool8 HealGlobalPP(u16 moveId, u8 value)
+{
+    u16 newPP;
+
+    if (gSaveBlock1Ptr->ppTracker[moveId] >= gBattleMoves[moveId].pp)
+        return FALSE;
+    
+    newPP = gSaveBlock1Ptr->ppTracker[moveId] + value;
+    if (newPP > gBattleMoves[moveId].pp)
+        gSaveBlock1Ptr->ppTracker[moveId] = gBattleMoves[moveId].pp;
+    else
+        gSaveBlock1Ptr->ppTracker[moveId] = newPP;
+
+    return TRUE;
+}
+
+void DeductGlobalPP(u16 moveId, u8 value)
+{
+    if (gSaveBlock1Ptr->ppTracker[moveId] < value)
+        gSaveBlock1Ptr->ppTracker[moveId] = 0;
+    else
+        gSaveBlock1Ptr->ppTracker[moveId] -= value;
+}

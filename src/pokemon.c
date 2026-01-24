@@ -35,6 +35,7 @@
 #include "text.h"
 #include "trainer_hill.h"
 #include "util.h"
+#include "pp_tracker.h"
 #include "constants/abilities.h"
 #include "constants/battle_frontier.h"
 #include "constants/battle_move_effects.h"
@@ -5111,23 +5112,28 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, u16 item, u8 partyIndex, u8 mov
                                 u16 move;
                                 dataUnsigned = GetMonData(mon, MON_DATA_PP1 + temp2, NULL);
                                 move = GetMonData(mon, MON_DATA_MOVE1 + temp2, NULL);
-                                if (dataUnsigned != CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), temp2))
-                                {
-                                    dataUnsigned += itemEffect[itemEffectParam];
-                                    move = GetMonData(mon, MON_DATA_MOVE1 + temp2, NULL); // Redundant
-                                    if (dataUnsigned > CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), temp2))
-                                    {
-                                        move = GetMonData(mon, MON_DATA_MOVE1 + temp2, NULL); // Redundant
-                                        dataUnsigned = CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), temp2);
-                                    }
-                                    SetMonData(mon, MON_DATA_PP1 + temp2, &dataUnsigned);
-
-                                    // Heal battler PP too (if applicable)
-                                    if (gMain.inBattle && battler != MAX_BATTLERS_COUNT && MOVE_IS_PERMANENT(battler, temp2))
-                                        gBattleMons[battler].pp[temp2] = dataUnsigned;
-
+                                if (HealGlobalPP(move, itemEffect[itemEffectParam]))
                                     retVal = FALSE;
-                                }
+
+                                // TODO: Handle opponent PP restore during battle
+
+                                // if (dataUnsigned != CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), temp2))
+                                // {
+                                //     dataUnsigned += itemEffect[itemEffectParam];
+                                //     move = GetMonData(mon, MON_DATA_MOVE1 + temp2, NULL); // Redundant
+                                //     if (dataUnsigned > CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), temp2))
+                                //     {
+                                //         move = GetMonData(mon, MON_DATA_MOVE1 + temp2, NULL); // Redundant
+                                //         dataUnsigned = CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), temp2);
+                                //     }
+                                //     SetMonData(mon, MON_DATA_PP1 + temp2, &dataUnsigned);
+
+                                //     // Heal battler PP too (if applicable)
+                                //     if (gMain.inBattle && battler != MAX_BATTLERS_COUNT && MOVE_IS_PERMANENT(battler, temp2))
+                                //         gBattleMons[battler].pp[temp2] = dataUnsigned;
+
+                                //     retVal = FALSE;
+                                // }
                             }
                             itemEffectParam++;
                         }
@@ -5137,23 +5143,26 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, u16 item, u8 partyIndex, u8 mov
                             u16 move;
                             dataUnsigned = GetMonData(mon, MON_DATA_PP1 + moveIndex, NULL);
                             move = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL);
-                            if (dataUnsigned != CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex))
-                            {
-                                dataUnsigned += itemEffect[itemEffectParam++];
-                                move = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL); // Redundant
-                                if (dataUnsigned > CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex))
-                                {
-                                    move = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL); // Redundant
-                                    dataUnsigned = CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex);
-                                }
-                                SetMonData(mon, MON_DATA_PP1 + moveIndex, &dataUnsigned);
-
-                                // Heal battler PP too (if applicable)
-                                if (gMain.inBattle && battler != MAX_BATTLERS_COUNT && MOVE_IS_PERMANENT(battler, moveIndex))
-                                    gBattleMons[battler].pp[moveIndex] = dataUnsigned;
-
+                            if (HealGlobalPP(move, itemEffect[itemEffectParam++]))
                                 retVal = FALSE;
-                            }
+                            
+                            // if (dataUnsigned != CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex))
+                            // {
+                            //     dataUnsigned += itemEffect[itemEffectParam++];
+                            //     move = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL); // Redundant
+                            //     if (dataUnsigned > CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex))
+                            //     {
+                            //         move = GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL); // Redundant
+                            //         dataUnsigned = CalculatePPWithBonus(move, GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex);
+                            //     }
+                            //     SetMonData(mon, MON_DATA_PP1 + moveIndex, &dataUnsigned);
+
+                            //     // Heal battler PP too (if applicable)
+                            //     if (gMain.inBattle && battler != MAX_BATTLERS_COUNT && MOVE_IS_PERMANENT(battler, moveIndex))
+                            //         gBattleMons[battler].pp[moveIndex] = dataUnsigned;
+
+                            //     retVal = FALSE;
+                            // }
                         }
                         break;
 
