@@ -39,6 +39,7 @@
 #include "pokenav.h"
 #include "menu_specialized.h"
 #include "data.h"
+#include "pp_tracker.h"
 #include "constants/abilities.h"
 #include "constants/battle_anim.h"
 #include "constants/battle_move_effects.h"
@@ -799,8 +800,8 @@ static const u16 sPickupItems[] =
     ITEM_HP_UP,
     ITEM_FULL_RESTORE,
     ITEM_MAX_REVIVE,
-    ITEM_PP_UP,
-    ITEM_MAX_ELIXIR,
+    // ITEM_PP_UP,
+    // ITEM_MAX_ELIXIR,
 };
 
 static const u16 sRarePickupItems[] =
@@ -809,10 +810,10 @@ static const u16 sRarePickupItems[] =
     ITEM_NUGGET,
     ITEM_KINGS_ROCK,
     ITEM_FULL_RESTORE,
-    ITEM_ETHER,
+    // ITEM_ETHER,
     ITEM_WHITE_HERB,
     ITEM_TM_REST,
-    ITEM_ELIXIR,
+    // ITEM_ELIXIR,
     ITEM_TM_FOCUS_PUNCH,
     ITEM_LEFTOVERS,
     ITEM_TM_EARTHQUAKE,
@@ -1234,11 +1235,8 @@ static void Cmd_ppreduce(void)
 
         if (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)
         {
-            // deduct PP from global value
-            if (gSaveBlock1Ptr->ppTracker[gCurrentMove] > ppToDeduct)
-                gSaveBlock1Ptr->ppTracker[gCurrentMove] -= ppToDeduct;
-            else
-                gSaveBlock1Ptr->ppTracker[gCurrentMove] = 0;
+            // Player deducts global PP
+            DeductGlobalPP(gCurrentMove, ppToDeduct);
         }
         else
         {
@@ -9718,8 +9716,8 @@ static void Cmd_pickup(void)
                 s32 j;
                 s32 rand = Random() % 100;
                 u8 lvlDivBy10 = (GetMonData(&gPlayerParty[i], MON_DATA_LEVEL) - 1) / 10;
-                if (lvlDivBy10 > 9)
-                    lvlDivBy10 = 9;
+                if (lvlDivBy10 > 7)
+                    lvlDivBy10 = 7;
 
                 for (j = 0; j < (int)ARRAY_COUNT(sPickupProbabilities); j++)
                 {
