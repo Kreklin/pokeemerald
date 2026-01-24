@@ -29,12 +29,16 @@
 #include "task.h"
 #include "window.h"
 #include "menu_specialized.h"
+#include "data.h"
+#include "pp_tracker.h"
+#include "pokemon_summary_screen.h"
 
 // Top level PC menu options
 enum {
     MENU_ITEMSTORAGE,
     MENU_MAILBOX,
     MENU_DECORATION,
+    MENU_PPTRACKER,
     MENU_TURNOFF
 };
 
@@ -65,6 +69,13 @@ enum {
 };
  // When showing the main list, the first window to this window are drawn
 #define ITEMPC_WIN_LIST_END ITEMPC_WIN_TITLE
+
+// Windows for PP Tracker
+enum {
+    PPTRACKERPC_WIN_LIST,
+    PPTRACKERPC_WIN_TITLE,
+    PPTRACKERPC_WIN_COUNT
+};
 
 // Message IDs for Item Storage
 enum {
@@ -97,6 +108,14 @@ struct ItemStorageMenu
     u8 swapLineSpriteIds[SWAP_LINE_LENGTH];
 };
 
+struct PPTrackerMenu
+{
+    struct ListMenuItem listItems[MOVES_COUNT];
+    u8 moveNames[MOVES_COUNT][MOVE_NAME_LENGTH + 1]; // the +1 stops it from starting to read the next move name in the list display for some reason?
+    u8 windowIds[PPTRACKERPC_WIN_COUNT];
+    u8 spriteId;
+};
+
 static void InitPlayerPCMenu(u8);
 static void PlayerPCProcessMenuInput(u8);
 static void InitItemStorageMenu(u8, u8);
@@ -113,6 +132,7 @@ static void Mailbox_MailOptionsProcessInput(u8);
 static void PlayerPC_ItemStorage(u8);
 static void PlayerPC_Mailbox(u8);
 static void PlayerPC_Decoration(u8);
+static void PlayerPC_PPTracker(u8);
 static void PlayerPC_TurnOff(u8);
 
 static void Mailbox_DoMailMoveToBag(u8);
@@ -176,10 +196,25 @@ static void ItemStorage_EraseMainMenu(u8);
 static void ItemStorage_MoveCursor(s32, bool8, struct ListMenu *);
 static void ItemStorage_PrintMenuItem(u8, u32, u8);
 
+static void PPTracker_Enter(u8);
+static void PPTracker_CreateListMenu(u8);
+static void PPTracker_ProcessInput(u8);
+static void PPTracker_ExitItemList(u8);
+
+static void PPTracker_Init(void);
+static void PPTracker_RemoveWindow(u8);
+static void PPTracker_EraseItemIcon(void);
+static void PPTracker_DrawItemIcon(bool8);
+static void PPTracker_PrintDescription(s32);
+static void PPTracker_EraseMainMenu(u8);
+static void PPTracker_MoveCursor(s32, bool8, struct ListMenu *);
+static void PPTracker_PrintMenuItem(u8, u32, u8);
+
 static EWRAM_DATA const u8 *sTopMenuOptionOrder = NULL;
 static EWRAM_DATA u8 sTopMenuNumOptions = 0;
 EWRAM_DATA struct PlayerPCItemPageStruct gPlayerPCItemPageInfo = {};
 static EWRAM_DATA struct ItemStorageMenu *sItemStorageMenu = NULL;
+static EWRAM_DATA struct PPTrackerMenu *sPPTrackerMenu = NULL;
 
 static const u8 *const sItemStorage_OptionDescriptions[] =
 {
@@ -194,6 +229,7 @@ static const struct MenuAction sPlayerPCMenuActions[] =
     [MENU_ITEMSTORAGE] = { gText_ItemStorage, {PlayerPC_ItemStorage} },
     [MENU_MAILBOX]     = { gText_Mailbox,     {PlayerPC_Mailbox} },
     [MENU_DECORATION]  = { gText_Decoration,  {PlayerPC_Decoration} },
+    [MENU_PPTRACKER]   = { gText_PPTracker,   {PlayerPC_PPTracker} },
     [MENU_TURNOFF]     = { gText_TurnOff,     {PlayerPC_TurnOff} }
 };
 
@@ -202,6 +238,7 @@ static const u8 sBedroomPC_OptionOrder[] =
     MENU_ITEMSTORAGE,
     MENU_MAILBOX,
     MENU_DECORATION,
+    MENU_PPTRACKER,
     MENU_TURNOFF
 };
 #define NUM_BEDROOM_PC_OPTIONS ARRAY_COUNT(sBedroomPC_OptionOrder)
@@ -210,6 +247,7 @@ static const u8 sPlayerPC_OptionOrder[] =
 {
     MENU_ITEMSTORAGE,
     MENU_MAILBOX,
+    MENU_PPTRACKER,
     MENU_TURNOFF
 };
 #define NUM_PLAYER_PC_OPTIONS ARRAY_COUNT(sPlayerPC_OptionOrder)
@@ -243,7 +281,7 @@ static const struct WindowTemplate sWindowTemplates_MainMenus[] =
         .tilemapLeft = 1,
         .tilemapTop = 1,
         .width = 9,
-        .height = 6,
+        .height = 8,
         .paletteNum = 15,
         .baseBlock = 1
     },
@@ -252,7 +290,7 @@ static const struct WindowTemplate sWindowTemplates_MainMenus[] =
         .tilemapLeft = 1,
         .tilemapTop = 1,
         .width = 9,
-        .height = 8,
+        .height = 10,
         .paletteNum = 15,
         .baseBlock = 1
     },
@@ -278,6 +316,28 @@ static const struct ListMenuTemplate sListMenuTemplate_ItemStorage =
     .items = NULL,
     .moveCursorFunc = ItemStorage_MoveCursor,
     .itemPrintFunc = ItemStorage_PrintMenuItem,
+    .totalItems = 0,
+    .maxShowed = 0,
+    .windowId = 0,
+    .header_X = 0,
+    .item_X = 8,
+    .cursor_X = 0,
+    .upText_Y = 9,
+    .cursorPal = 2,
+    .fillValue = 1,
+    .cursorShadowPal = 3,
+    .lettersSpacing = FALSE,
+    .itemVerticalPadding = 0,
+    .scrollMultiple = LIST_NO_MULTIPLE_SCROLL,
+    .fontId = FONT_NARROW,
+    .cursorKind = CURSOR_BLACK_ARROW,
+};
+
+static const struct ListMenuTemplate sListMenuTemplate_PPTracker =
+{
+    .items = NULL,
+    .moveCursorFunc = PPTracker_MoveCursor,
+    .itemPrintFunc = PPTracker_PrintMenuItem,
     .totalItems = 0,
     .maxShowed = 0,
     .windowId = 0,
@@ -350,6 +410,27 @@ static const struct WindowTemplate sWindowTemplates_ItemStorage[ITEMPC_WIN_COUNT
         .height = 4,
         .paletteNum = 15,
         .baseBlock = 0x0168
+    }
+};
+
+static const struct WindowTemplate sWindowTemplates_PPTracker[PPTRACKERPC_WIN_COUNT] = {
+    [PPTRACKERPC_WIN_LIST] = {
+        .bg = 0,
+        .tilemapLeft = 16,
+        .tilemapTop = 1,
+        .width = 13,
+        .height = 18,
+        .paletteNum = 15,
+        .baseBlock = 0x0001
+    },
+    [PPTRACKERPC_WIN_TITLE] = {
+        .bg = 0,
+        .tilemapLeft = 1,
+        .tilemapTop = 1,
+        .width = 13,
+        .height = 2,
+        .paletteNum = 15,
+        .baseBlock = 0x0139
     }
 };
 
@@ -487,6 +568,11 @@ static void PlayerPC_Mailbox(u8 taskId)
 static void PlayerPC_Decoration(u8 taskId)
 {
     DoPlayerRoomDecorationMenu(taskId);
+}
+
+static void PlayerPC_PPTracker(u8 taskId)
+{
+    PPTracker_Enter(taskId);
 }
 
 static void PlayerPC_TurnOff(u8 taskId)
@@ -642,6 +728,27 @@ static void ItemStorage_Enter(u8 taskId, bool8 toss)
 }
 
 static void ItemStorage_Exit(u8 taskId)
+{
+    ItemStorage_EraseMainMenu(taskId);
+    ReshowPlayerPC(taskId);
+}
+
+static void PPTracker_Enter(u8 taskId)
+{
+    ItemStorage_EraseMainMenu(taskId);
+    gPlayerPCItemPageInfo.cursorPos = 0;
+    gPlayerPCItemPageInfo.itemsAbove = 0;
+    gPlayerPCItemPageInfo.scrollIndicatorTaskId = TASK_NONE;
+    SetPlayerPCListCount(taskId);
+    PPTracker_Init();
+    FreeAndReserveObjectSpritePalettes();
+    LoadListMenuSwapLineGfx();
+    CreateSwapLineSprites(sItemStorageMenu->swapLineSpriteIds, SWAP_LINE_LENGTH);
+    ClearDialogWindowAndFrame(0, FALSE);
+    gTasks[taskId].func = PPTracker_CreateListMenu;
+}
+
+static void PPTracker_Exit(u8 taskId)
 {
     ItemStorage_EraseMainMenu(taskId);
     ReshowPlayerPC(taskId);
@@ -949,12 +1056,27 @@ static void ItemStorage_Init(void)
     sItemStorageMenu->spriteId = SPRITE_NONE;
 }
 
+static void PPTracker_Init(void)
+{
+    sPPTrackerMenu = AllocZeroed(sizeof(*sPPTrackerMenu));
+    memset(sPPTrackerMenu->windowIds, WINDOW_NONE, PPTRACKERPC_WIN_COUNT);
+    sPPTrackerMenu->spriteId = SPRITE_NONE;
+}
+
 static void ItemStorage_Free(void)
 {
     u32 i;
     for (i = 0; i < ITEMPC_WIN_COUNT; i++)
         ItemStorage_RemoveWindow(i);
     Free(sItemStorageMenu);
+}
+
+static void PPTracker_Free(void)
+{
+    u32 i;
+    for (i = 0; i < PPTRACKERPC_WIN_COUNT; i++)
+        PPTracker_RemoveWindow(i);
+    Free(sPPTrackerMenu);
 }
 
 static u8 ItemStorage_AddWindow(u8 i)
@@ -969,9 +1091,34 @@ static u8 ItemStorage_AddWindow(u8 i)
     return *windowIdLoc;
 }
 
+static u8 PPTracker_AddWindow(u8 i)
+{
+    u8 *windowIdLoc = &sPPTrackerMenu->windowIds[i];
+    if (*windowIdLoc == WINDOW_NONE)
+    {
+        *windowIdLoc = AddWindow(&sWindowTemplates_PPTracker[i]);
+        DrawStdFrameWithCustomTileAndPalette(*windowIdLoc, FALSE, 0x214, 0xE);
+        ScheduleBgCopyTilemapToVram(0);
+    }
+    return *windowIdLoc;
+}
+
 static void ItemStorage_RemoveWindow(u8 i)
 {
     u8 *windowIdLoc = &sItemStorageMenu->windowIds[i];
+    if (*windowIdLoc != WINDOW_NONE)
+    {
+        ClearStdWindowAndFrameToTransparent(*windowIdLoc, FALSE);
+        ClearWindowTilemap(*windowIdLoc);
+        ScheduleBgCopyTilemapToVram(0);
+        RemoveWindow(*windowIdLoc);
+        *windowIdLoc = WINDOW_NONE;
+    }
+}
+
+static void PPTracker_RemoveWindow(u8 i)
+{
+    u8 *windowIdLoc = &sPPTrackerMenu->windowIds[i];
     if (*windowIdLoc != WINDOW_NONE)
     {
         ClearStdWindowAndFrameToTransparent(*windowIdLoc, FALSE);
@@ -1007,6 +1154,35 @@ void ItemStorage_RefreshListMenu(void)
     gMultiuseListMenuTemplate.maxShowed = gPlayerPCItemPageInfo.pageItems;
 }
 
+void PPTracker_RefreshListMenu(void)
+{
+    u16 i; // list item index
+    u16 moveId;
+
+    for (moveId = 0; moveId < MOVES_COUNT; moveId++)
+    {
+        if (IsMovePPTracked(moveId))
+        {
+            StringCopy(&sPPTrackerMenu->moveNames[i][0], gMoveNames[moveId]);
+            sPPTrackerMenu->listItems[i].name = &sPPTrackerMenu->moveNames[i][0];
+            sPPTrackerMenu->listItems[i].id = moveId;
+            i++;
+        }
+    }
+
+    // Set up Cancel entry
+    StringCopy(&sPPTrackerMenu->moveNames[i][0], gText_Cancel2);
+    sPPTrackerMenu->listItems[i].name = &sPPTrackerMenu->moveNames[i][0];
+    sPPTrackerMenu->listItems[i].id = LIST_CANCEL;
+
+    // Set list menu data
+    gMultiuseListMenuTemplate = sListMenuTemplate_PPTracker;
+    gMultiuseListMenuTemplate.windowId = PPTracker_AddWindow(PPTRACKERPC_WIN_LIST);
+    gMultiuseListMenuTemplate.totalItems = gPlayerPCItemPageInfo.count;
+    gMultiuseListMenuTemplate.items = sPPTrackerMenu->listItems;
+    gMultiuseListMenuTemplate.maxShowed = gPlayerPCItemPageInfo.pageItems;
+}
+
 void CopyItemName_PlayerPC(u8 *string, u16 itemId)
 {
     CopyItemName(itemId, string);
@@ -1027,6 +1203,16 @@ static void ItemStorage_MoveCursor(s32 id, bool8 onInit, struct ListMenu *list)
     }
 }
 
+static void PPTracker_MoveCursor(s32 id, bool8 onInit, struct ListMenu *list)
+{
+    if (onInit != TRUE)
+        PlaySE(SE_SELECT);
+    
+    // PPTracker_EraseItemIcon();
+    // PPTracker_DrawItemIcon(id == LIST_CANCEL);
+    // PPTracker_PrintDescription(id);
+}
+
 static void ItemStorage_PrintMenuItem(u8 windowId, u32 id, u8 yOffset)
 {
     if (id != LIST_CANCEL)
@@ -1039,6 +1225,16 @@ static void ItemStorage_PrintMenuItem(u8 windowId, u32 id, u8 yOffset)
                 ItemStorage_DrawSwapArrow(yOffset, 0xFF, TEXT_SKIP_DRAW);
         }
         ConvertIntToDecimalStringN(gStringVar1, gSaveBlock1Ptr->pcItems[id].quantity, STR_CONV_MODE_RIGHT_ALIGN, 3);
+        StringExpandPlaceholders(gStringVar4, gText_xVar1);
+        AddTextPrinterParameterized(windowId, FONT_NARROW, gStringVar4, GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 104), yOffset, TEXT_SKIP_DRAW, NULL);
+    }
+}
+
+static void PPTracker_PrintMenuItem(u8 windowId, u32 id, u8 yOffset)
+{
+    if (id != LIST_CANCEL)
+    {
+        ConvertIntToDecimalStringN(gStringVar1, gSaveBlock1Ptr->ppTracker[id], STR_CONV_MODE_RIGHT_ALIGN, 3);
         StringExpandPlaceholders(gStringVar4, gText_xVar1);
         AddTextPrinterParameterized(windowId, FONT_NARROW, gStringVar4, GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 104), yOffset, TEXT_SKIP_DRAW, NULL);
     }
@@ -1057,6 +1253,21 @@ static void ItemStorage_PrintDescription(s32 id)
 
     FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
     AddTextPrinterParameterized(windowId, FONT_NORMAL, description, 0, 1, 0, NULL);
+}
+
+static void PPTracker_PrintDescription(s32 id)
+{
+    const u8 *description;
+    u8 windowId = sPPTrackerMenu->windowIds[ITEMPC_WIN_MESSAGE];
+
+    // Get move description (or Cancel text)
+    if (id != LIST_CANCEL)
+        description = (u8 *)gMoveDescriptionPointers[id - 1];
+    else
+        description = ItemStorage_GetMessage(MSG_GO_BACK_TO_PREV);
+
+    FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
+    AddTextPrinterParameterized(windowId, FONT_SMALL_NARROW, description, 0, 1, 0, NULL);
 }
 
 static void ItemStorage_AddScrollIndicator(void)
@@ -1112,9 +1323,43 @@ static void ItemStorage_DrawItemIcon(u16 itemId)
     }
 }
 
+static void PPTracker_DrawItemIcon(bool8 isCancel)
+{
+    u16 itemId = isCancel ? ITEM_LIST_END : ITEM_TM01;
+
+    u8 spriteId;
+    u8 *spriteIdLoc = &sPPTrackerMenu->spriteId;
+
+    if (*spriteIdLoc == SPRITE_NONE)
+    {
+        FreeSpriteTilesByTag(TAG_ITEM_ICON);
+        FreeSpritePaletteByTag(TAG_ITEM_ICON);
+        spriteId = AddItemIconSprite(TAG_ITEM_ICON, TAG_ITEM_ICON, itemId);
+        if (spriteId != MAX_SPRITES)
+        {
+            *spriteIdLoc = spriteId;
+            gSprites[spriteId].oam.priority = 0;
+            gSprites[spriteId].x2 = 24;
+            gSprites[spriteId].y2 = 80;
+        }
+    }
+}
+
 static void ItemStorage_EraseItemIcon(void)
 {
     u8 *spriteIdLoc = &sItemStorageMenu->spriteId;
+    if (*spriteIdLoc != SPRITE_NONE)
+    {
+        FreeSpriteTilesByTag(TAG_ITEM_ICON);
+        FreeSpritePaletteByTag(TAG_ITEM_ICON);
+        DestroySprite(&gSprites[*spriteIdLoc]);
+        *spriteIdLoc = SPRITE_NONE;
+    }
+}
+
+static void PPTracker_EraseItemIcon(void)
+{
+    u8 *spriteIdLoc = &sPPTrackerMenu->spriteId;
     if (*spriteIdLoc != SPRITE_NONE)
     {
         FreeSpriteTilesByTag(TAG_ITEM_ICON);
@@ -1159,6 +1404,26 @@ static void ItemStorage_CreateListMenu(u8 taskId)
     ItemStorage_AddScrollIndicator();
     ScheduleBgCopyTilemapToVram(0);
     gTasks[taskId].func = ItemStorage_ProcessInput;
+}
+
+static void PPTracker_CreateListMenu(u8 taskId)
+{
+    s16 *data;
+    u32 i, x;
+
+    data = gTasks[taskId].data;
+    for (i = 0; i <= PPTRACKERPC_WIN_COUNT; i++)
+        PPTracker_AddWindow(i);
+
+    x = GetStringCenterAlignXOffset(FONT_NORMAL, gText_PPTracker, 104);
+    AddTextPrinterParameterized(sPPTrackerMenu->windowIds[PPTRACKERPC_WIN_TITLE], FONT_NORMAL, gText_PPTracker, x, 1, 0, NULL);
+    SetPPTrackerPerPageCount(&gPlayerPCItemPageInfo.pageItems, &gPlayerPCItemPageInfo.count, 8);
+    ItemStorage_CompactCursor();
+    PPTracker_RefreshListMenu();
+    tListTaskId = ListMenuInit(&gMultiuseListMenuTemplate, gPlayerPCItemPageInfo.itemsAbove, gPlayerPCItemPageInfo.cursorPos);
+    ItemStorage_AddScrollIndicator();
+    ScheduleBgCopyTilemapToVram(0);
+    gTasks[taskId].func = PPTracker_ProcessInput;
 }
 
 static const u8 *ItemStorage_GetMessage(u16 itemId)
@@ -1243,6 +1508,28 @@ static void ItemStorage_ProcessInput(u8 taskId)
     }
 }
 
+static void PPTracker_ProcessInput(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+
+    s32 id = ListMenu_ProcessInput(tListTaskId);
+    ListMenuGetScrollAndRow(tListTaskId, &gPlayerPCItemPageInfo.itemsAbove, &gPlayerPCItemPageInfo.cursorPos);
+    switch (id)
+    {
+    case LIST_NOTHING_CHOSEN:
+        break;
+    case LIST_CANCEL:
+        PlaySE(SE_SELECT);
+        PPTracker_ExitItemList(taskId);
+        break;
+    default:
+        PlaySE(SE_SELECT);
+        // no behavior needed on select for now
+        // ItemStorage_DoItemAction(taskId);
+        break;
+    }
+}
+
 static void ItemStorage_ReturnToMenuSelect(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
@@ -1268,6 +1555,17 @@ static void ItemStorage_ExitItemList(u8 taskId)
     DestroySwapLineSprites(sItemStorageMenu->swapLineSpriteIds, SWAP_LINE_LENGTH);
     ItemStorage_Free();
     gTasks[taskId].func = ItemStorage_ReturnToMenuSelect;
+}
+
+static void PPTracker_ExitItemList(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+    PPTracker_EraseItemIcon();
+    ItemStorage_RemoveScrollIndicator();
+    DestroyListMenuTask(tListTaskId, NULL, NULL);
+    // DestroySwapLineSprites(sItemStorageMenu->swapLineSpriteIds, SWAP_LINE_LENGTH);
+    PPTracker_Free();
+    gTasks[taskId].func = PPTracker_Exit;
 }
 
 static void ItemStorage_StartItemSwap(u8 taskId)

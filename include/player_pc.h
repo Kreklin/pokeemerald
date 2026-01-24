@@ -8,8 +8,8 @@ struct PlayerPCItemPageStruct
     u16 cursorPos;
     u16 itemsAbove;
     u8 pageItems;
-    u8 count;
-    u8 filler[3];
+    u16 count;
+    u8 filler[2];
     u8 scrollIndicatorTaskId;
 };
 

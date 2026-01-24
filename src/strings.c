@@ -575,6 +575,7 @@ const u8 gText_TurnOff[] = _("TURN OFF");
 const u8 gText_Decoration[] = _("DECORATION");
 const u8 gText_ItemStorage[] = _("ITEM STORAGE");
 const u8 gText_Mailbox[] = _("MAILBOX");
+const u8 gText_PPTracker[] = _("PP TRACKER");
 const u8 gText_DepositItem[] = _("DEPOSIT ITEM");
 const u8 gText_WithdrawItem[] = _("WITHDRAW ITEM");
 const u8 gText_TossItem[] = _("TOSS ITEM");

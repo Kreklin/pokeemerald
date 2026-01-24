@@ -14,8 +14,10 @@
 #include "mail.h"
 #include "overworld.h"
 #include "decompress.h"
+#include "pp_tracker.h"
 #include "constants/songs.h"
 #include "constants/items.h"
+#include "constants/moves.h"
 
 #define TAG_SWAP_LINE 109
 
@@ -319,7 +321,7 @@ bool8 MenuHelpers_ShouldWaitForLinkRecv(void)
         return FALSE;
 }
 
-void SetItemListPerPageCount(struct ItemSlot *slots, u8 slotsCount, u8 *pageItems, u8 *totalItems, u8 maxPerPage)
+void SetItemListPerPageCount(struct ItemSlot *slots, u8 slotsCount, u8 *pageItems, u16 *totalItems, u8 maxPerPage)
 {
     u16 i;
     struct ItemSlot *slots_ = slots;
@@ -340,7 +342,26 @@ void SetItemListPerPageCount(struct ItemSlot *slots, u8 slotsCount, u8 *pageItem
         *pageItems = *totalItems;
 }
 
-void SetCursorWithinListBounds(u16 *scrollOffset, u16 *cursorPos, u8 maxShownItems, u8 totalItems)
+void SetPPTrackerPerPageCount(u8 *pageItems, u16 *totalItems, u8 maxPerPage)
+{
+    u16 i; // Move ID
+    
+    // Count tracked moves
+    *totalItems = 0;
+    for (i = 0; i < MOVES_COUNT; i++)
+    {
+        if (IsMovePPTracked(i))
+            (*totalItems)++;
+    }
+    (*totalItems)++; // + 1 for 'Cancel'
+
+    if (*totalItems > maxPerPage)
+        *pageItems = maxPerPage;
+    else
+        *pageItems = maxPerPage;
+}
+
+void SetCursorWithinListBounds(u16 *scrollOffset, u16 *cursorPos, u8 maxShownItems, u16 totalItems)
 {
     if (*scrollOffset != 0 && *scrollOffset + maxShownItems > totalItems)
         *scrollOffset = totalItems - maxShownItems;
@@ -354,7 +375,7 @@ void SetCursorWithinListBounds(u16 *scrollOffset, u16 *cursorPos, u8 maxShownIte
     }
 }
 
-void SetCursorScrollWithinListBounds(u16 *scrollOffset, u16 *cursorPos, u8 shownItems, u8 totalItems, u8 maxShownItems)
+void SetCursorScrollWithinListBounds(u16 *scrollOffset, u16 *cursorPos, u8 shownItems, u16 totalItems, u8 maxShownItems)
 {
     u8 i;
 
