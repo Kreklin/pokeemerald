@@ -33,6 +33,8 @@
 #include "pp_tracker.h"
 #include "pokemon_summary_screen.h"
 #include "dynamic_placeholder_text_util.h"
+#include "battle.h"
+#include "battle_message.h"
 
 // Top level PC menu options
 enum {
@@ -437,6 +439,14 @@ static const struct WindowTemplate sWindowTemplates_PPTracker[PPTRACKERPC_WIN_CO
 
 static const u8 sSwapArrowTextColors[] = {TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY};
 
+static const u8 sTextColors[][3] =
+{
+    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}, // less than 50% and more than 25% PP
+    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_GREEN, TEXT_COLOR_LIGHT_GREEN}, // less than 25% PP
+    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED}, // out of PP
+    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY} // max PP or mostly full
+};
+
 void NewGameInitPCItems(void)
 {
     u8 i = 0;
@@ -743,8 +753,6 @@ static void PPTracker_Enter(u8 taskId)
     SetPlayerPCListCount(taskId);
     PPTracker_Init();
     FreeAndReserveObjectSpritePalettes();
-    LoadListMenuSwapLineGfx();
-    CreateSwapLineSprites(sItemStorageMenu->swapLineSpriteIds, SWAP_LINE_LENGTH);
     ClearDialogWindowAndFrame(0, FALSE);
     gTasks[taskId].func = PPTracker_CreateListMenu;
 }
@@ -1158,18 +1166,29 @@ void ItemStorage_RefreshListMenu(void)
 void PPTracker_RefreshListMenu(void)
 {
     u16 i; // list item index
-    u16 moveId;
+    u16 moveId = 0;
 
-    for (moveId = 0; moveId < MOVES_COUNT; moveId++)
+    for (i = 0; i < gPlayerPCItemPageInfo.count - 1; i++)
     {
-        if (IsMovePPTracked(moveId))
-        {
-            StringCopy(&sPPTrackerMenu->moveNames[i][0], gMoveNames[moveId]);
-            sPPTrackerMenu->listItems[i].name = &sPPTrackerMenu->moveNames[i][0];
-            sPPTrackerMenu->listItems[i].id = moveId;
-            i++;
-        }
+        while (!IsMovePPTracked(moveId))
+            moveId++;
+        
+        StringCopy(&sPPTrackerMenu->moveNames[i][0], gMoveNames[moveId]);
+        sPPTrackerMenu->listItems[i].name = &sPPTrackerMenu->moveNames[i][0];
+        sPPTrackerMenu->listItems[i].id = moveId;
+        moveId++;
     }
+
+    // for (moveId = 0; moveId < MOVES_COUNT; moveId++)
+    // {
+    //     if (IsMovePPTracked(moveId))
+    //     {
+    //         StringCopy(&sPPTrackerMenu->moveNames[i][0], gMoveNames[moveId]);
+    //         sPPTrackerMenu->listItems[i].name = &sPPTrackerMenu->moveNames[i][0];
+    //         sPPTrackerMenu->listItems[i].id = moveId;
+    //         i++;
+    //     }
+    // }
 
     // Set up Cancel entry
     StringCopy(&sPPTrackerMenu->moveNames[i][0], gText_Cancel2);
@@ -1233,15 +1252,23 @@ static void ItemStorage_PrintMenuItem(u8 windowId, u32 id, u8 yOffset)
 
 static void PPTracker_PrintMenuItem(u8 windowId, u32 id, u8 yOffset)
 {
+    u8 pp;
+    u8 maxPP;
+
     if (id != LIST_CANCEL)
     {
-        ConvertIntToDecimalStringN(gStringVar1, GetGlobalPP(id), STR_CONV_MODE_RIGHT_ALIGN, 2);
-        ConvertIntToDecimalStringN(gStringVar2, GetGlobalMaxPP(id), STR_CONV_MODE_RIGHT_ALIGN, 2);
+        pp = GetGlobalPP(id);
+        maxPP = GetGlobalMaxPP(id);
+
+        ConvertIntToDecimalStringN(gStringVar1, pp, STR_CONV_MODE_RIGHT_ALIGN, 2);
+        ConvertIntToDecimalStringN(gStringVar2, maxPP, STR_CONV_MODE_RIGHT_ALIGN, 2);
         DynamicPlaceholderTextUtil_Reset();
         DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
         DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, gStringVar2);
         DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_PPTrackerCount);
-        AddTextPrinterParameterized(windowId, FONT_NARROW, gStringVar4, GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 104), yOffset, TEXT_SKIP_DRAW, NULL);
+
+        // AddTextPrinterParameterized(windowId, FONT_NARROW, gStringVar4, GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 104), yOffset, TEXT_SKIP_DRAW, NULL);
+        AddTextPrinterParameterized4(windowId, FONT_NARROW, GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 104), yOffset, 0, 0, sTextColors[GetCurrentPpToMaxPpState(pp, maxPP)], TEXT_SKIP_DRAW, gStringVar4);
     }
 }
 
@@ -1423,7 +1450,7 @@ static void PPTracker_CreateListMenu(u8 taskId)
     x = GetStringCenterAlignXOffset(FONT_NORMAL, gText_PPTracker, 104);
     AddTextPrinterParameterized(sPPTrackerMenu->windowIds[PPTRACKERPC_WIN_TITLE], FONT_NORMAL, gText_PPTracker, x, 1, 0, NULL);
     SetPPTrackerPerPageCount(&gPlayerPCItemPageInfo.pageItems, &gPlayerPCItemPageInfo.count, 8);
-    ItemStorage_CompactCursor();
+    // ItemStorage_CompactCursor();
     PPTracker_RefreshListMenu();
     tListTaskId = ListMenuInit(&gMultiuseListMenuTemplate, gPlayerPCItemPageInfo.itemsAbove, gPlayerPCItemPageInfo.cursorPos);
     ItemStorage_AddScrollIndicator();

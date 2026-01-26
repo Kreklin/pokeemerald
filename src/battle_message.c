@@ -20,6 +20,7 @@
 #include "text.h"
 #include "trainer_hill.h"
 #include "window.h"
+#include "pp_tracker.h"
 #include "constants/battle_dome.h"
 #include "constants/battle_string_ids.h"
 #include "constants/frontier_util.h"
@@ -3034,8 +3035,8 @@ void SetPpNumbersPaletteInMoveSelection(void)
 {
     struct ChooseMoveStruct *chooseMoveStruct = (struct ChooseMoveStruct *)(&gBattleBufferA[gActiveBattler][4]);
     const u16 *palPtr = gPPTextPalette;
-    u8 var = GetCurrentPpToMaxPpState(chooseMoveStruct->currentPp[gMoveSelectionCursor[gActiveBattler]],
-                         chooseMoveStruct->maxPp[gMoveSelectionCursor[gActiveBattler]]);
+    u8 var = GetCurrentPpToMaxPpState(GetGlobalPP(chooseMoveStruct->moves[gMoveSelectionCursor[gActiveBattler]]),
+                         GetGlobalMaxPP(chooseMoveStruct->moves[gMoveSelectionCursor[gActiveBattler]]));
 
     gPlttBufferUnfaded[BG_PLTT_ID(5) + 12] = palPtr[(var * 2) + 0];
     gPlttBufferUnfaded[BG_PLTT_ID(5) + 11] = palPtr[(var * 2) + 1];
