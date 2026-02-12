@@ -1,6 +1,7 @@
 #include "global.h"
 #include "pp_tracker.h"
 #include "constants/moves.h"
+#include "constants/trainers.h"
 #include "pokemon.h"
 
 static const u16 sPPTrackerExcludedMoves[] = {
@@ -104,4 +105,21 @@ bool8 IncreaseGlobalMaxPP(u16 moveId, u8 value)
     gSaveBlock1Ptr->ppIncreaseTracker[moveIndex] += sPPUpAddValues[moveSubindex] * ppIncreases;
 
     return TRUE;
+}
+
+static const u8 sPressureTrainerClasses[] = {
+    TRAINER_CLASS_LEADER
+};
+
+bool8 IsPressureTrainerClass(u8 trainerClass)
+{
+    u8 i;
+
+    for (i = 0; i < sizeof(sPressureTrainerClasses); i++)
+    {
+        if (sPressureTrainerClasses[i] == trainerClass)
+            return TRUE;
+    }
+
+    return FALSE;
 }

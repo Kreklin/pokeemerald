@@ -1227,6 +1227,10 @@ static void Cmd_ppreduce(void)
                 ppToDeduct++;
             break;
         }
+
+        // Certain trainer classes apply pressure effect to player side attackers
+        if (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER && IsPressureTrainerClass(gTrainers[gTrainerBattleOpponent_A].trainerClass))
+            ppToDeduct++;
     }
 
     if (!(gHitMarker & (HITMARKER_NO_PPDEDUCT | HITMARKER_NO_ATTACKSTRING)) && gBattleMons[gBattlerAttacker].pp[gCurrMovePos])
@@ -3042,6 +3046,12 @@ static void Cmd_tryfaintmon(void)
              && gCurrentMove != MOVE_STRUGGLE)
             {
                 u8 moveIndex = *(gBattleStruct->chosenMovePositions + gBattlerAttacker);
+
+                // reduce global PP for the move to zero if the pokemon that knocked out the grudger is on the player's side
+                if (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)
+                {
+                    DeductGlobalPP(gCurrentMove, 255);
+                }
 
                 gBattleMons[gBattlerAttacker].pp[moveIndex] = 0;
                 BattleScriptPush(gBattlescriptCurrInstr);
@@ -8342,14 +8352,29 @@ static void Cmd_tryspiteppreduce(void)
         if (i != MAX_MON_MOVES && gBattleMons[gBattlerTarget].pp[i] > 1)
         {
             s32 ppToDeduct = (Random() & 3) + 2;
-            if (gBattleMons[gBattlerTarget].pp[i] < ppToDeduct)
-                ppToDeduct = gBattleMons[gBattlerTarget].pp[i];
+            // Max PP deduction depends on whether we are subtracting from player side
+            if (GetBattlerSide(gBattlerTarget) == B_SIDE_PLAYER)
+            {
+                if (GetGlobalPP(gLastMoves[gBattlerTarget]) < ppToDeduct)
+                    ppToDeduct = GetGlobalPP(gLastMoves[gBattlerTarget]);
+            }
+            else
+            {
+                if (gBattleMons[gBattlerTarget].pp[i] < ppToDeduct)
+                    ppToDeduct = gBattleMons[gBattlerTarget].pp[i];
+            }
 
             PREPARE_MOVE_BUFFER(gBattleTextBuff1, gLastMoves[gBattlerTarget])
 
             ConvertIntToDecimalStringN(gBattleTextBuff2, ppToDeduct, STR_CONV_MODE_LEFT_ALIGN, 1);
 
             PREPARE_BYTE_NUMBER_BUFFER(gBattleTextBuff2, 1, ppToDeduct)
+
+            // If target is player side, subtract from global PP pool
+            if (GetBattlerSide(gBattlerTarget) == B_SIDE_PLAYER)
+            {
+                DeductGlobalPP(gLastMoves[gBattlerTarget], ppToDeduct);
+            }
 
             gBattleMons[gBattlerTarget].pp[i] -= ppToDeduct;
             gActiveBattler = gBattlerTarget;
@@ -10017,7 +10042,9 @@ static void Cmd_handleballthrow(void)
             }
         }
 
-        if (odds > 254) // mon caught
+        
+        // if (odds > 254) // mon caught
+        if (TRUE) // every ball is a guaranteed capture
         {
             BtlController_EmitBallThrowAnim(B_COMM_TO_CONTROLLER, BALL_3_SHAKES_SUCCESS);
             MarkBattlerForControllerExec(gActiveBattler);

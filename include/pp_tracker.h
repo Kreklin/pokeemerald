@@ -11,4 +11,6 @@ void DeductGlobalPP(u16, u8);
 u8 GetGlobalMaxPP(u16);
 bool8 IncreaseGlobalMaxPP(u16, u8);
 
+bool8 IsPressureTrainerClass(u8);
+
 #endif
