@@ -178,6 +178,10 @@ Route117_EventScript_Aisha::
 	msgbox Route117_Text_AishaPostBattle, MSGBOX_AUTOCLOSE
 	end
 
+Route117_EventScript_FatManBlockingDayCare::
+	msgbox Route117_Text_FatManBlockingDayCare, MSGBOX_NPC
+	end
+
 Route117_Text_DayCarePokemonHadNewMove:
 	.string "I left my POKéMON at the DAY CARE.\p"
 	.string "When I got it back, it had a new move\n"
@@ -204,3 +208,7 @@ Route117_Text_DayCareSign:
 	.string "POKéMON DAY CARE\n"
 	.string "“Let us raise your POKéMON.”$"
 
+Route117_Text_FatManBlockingDayCare:
+	.string "Ehehehe...\p"
+	.string "Did you know SKITTY and WAILORD\n"
+	.string "are in the same egg group?$"
